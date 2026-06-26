@@ -94,7 +94,69 @@ Initially, the generated SARIF file contained the raw leaked secret in the snipp
 
 Because the artifact is downloadable by anyone with repo access, exposing the raw secret is a security risk. The `--redact` flag was added to mask secrets in both the SARIF output and the workflow logs.
 
-## 6. Final Workflow
+## 6. Workflow Comparison
+
+### 6.1 Workflow WITHOUT redaction (NOT recommended)
+
+This version fixes the original `Path does not exist: results.sarif` error and updates the actions, but it does **not** redact secrets. The raw secret will be visible in the workflow logs and in the downloadable SARIF artifact.
+
+```yaml
+name: GitLeaks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install GitLeaks
+        run: |
+          set -euo pipefail
+          wget -q "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz"
+          tar -xzf gitleaks_8.30.1_linux_x64.tar.gz
+          sudo mv gitleaks /usr/local/bin/
+
+      - name: Run GitLeaks
+        id: gitleaks
+        run: |
+          set -euo pipefail
+          gitleaks git \
+            --report-format sarif \
+            --report-path results.sarif \
+            --verbose \
+            .
+
+      - name: Upload SARIF to GitHub Security tab
+        if: always() && hashFiles('results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: results.sarif
+
+      - name: Upload GitLeaks report artifact
+        if: always() && hashFiles('results.sarif') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: gitleaks-report
+          path: results.sarif
+          retention-days: 30
+```
+
+### 6.2 Workflow WITH redaction (recommended)
+
+The only difference from the version above is the addition of `--redact`. This masks secrets in the logs and the SARIF artifact.
 
 ```yaml
 name: GitLeaks
@@ -151,7 +213,7 @@ jobs:
           retention-days: 30
 ```
 
-## 7. Example: After the Fix
+## 7. Example: Before and After Redaction
 
 ### Console output BEFORE redaction (security risk)
 
