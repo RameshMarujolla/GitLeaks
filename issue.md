@@ -153,7 +153,30 @@ jobs:
 
 ## 7. Example: After the Fix
 
-### Console output (redacted)
+### Console output BEFORE redaction (security risk)
+
+Before adding `--redact`, the raw secret value was printed directly in the GitHub Actions workflow logs. Anyone with read access to the repository could view it:
+
+```
+gitleaks	Run GitLeaks	Finding:     aws_access_key = "AKIA1234567890ABCDEF"  # AWS secret key h...
+gitleaks	Run GitLeaks	Secret:      AKIA1234567890ABCDEF
+gitleaks	Run GitLeaks	RuleID:      generic-api-key
+gitleaks	Run GitLeaks	File:        test.py
+gitleaks	Run GitLeaks	Line:        2
+gitleaks	Run GitLeaks	Commit:      1dcd2bd89ab6cbe6a40b19bf60be2e3480acce08
+gitleaks	Run GitLeaks	Author:      RameshMarujolla
+gitleaks	Run GitLeaks	Email:       ramesh.btp69@gmail.com
+gitleaks	Run GitLeaks	Date:        2026-06-26T16:35:36Z
+gitleaks	Run GitLeaks	Fingerprint: 1dcd2bd89ab6cbe6a40b19bf60be2e3480acce08:test.py:generic-api-key:2
+gitleaks	Run GitLeaks	Link:        https://github.com/RameshMarujolla/GitLeaks/blob/1dcd2bd89ab6cbe6a40b19bf60be2e3480acce08/test.py#L2
+gitleaks	Run GitLeaks	INF 9 commits scanned.
+gitleaks	Run GitLeaks	INF scanned ~7284 bytes (7.28 KB) in 33.2ms
+gitleaks	Run GitLeaks	WRN leaks found: 1
+```
+
+### Console output AFTER redaction (safe)
+
+After adding `--redact`, the secret is masked in the logs:
 
 ```
 gitleaks	Run GitLeaks	Finding:     aws_access_key = "REDACTED"  # AWS secret key h...
@@ -164,7 +187,17 @@ gitleaks	Run GitLeaks	Line:        2
 gitleaks	Run GitLeaks	WRN leaks found: 1
 ```
 
-### SARIF artifact snippet (redacted)
+### SARIF artifact snippet BEFORE redaction (security risk)
+
+The raw secret was also embedded in the downloaded artifact before redaction:
+
+```json
+"snippet": {
+  "text": "AKIA1234567890ABCDEF"
+}
+```
+
+### SARIF artifact snippet AFTER redaction (safe)
 
 ```json
 "snippet": {
