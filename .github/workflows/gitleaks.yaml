@@ -1,18 +1,18 @@
 name: GitLeaks
 
 on:
-  pull_request:
   push:
     branches:
       - main
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write
 
 jobs:
-  scan:
+  gitleaks:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-      security-events: write
 
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +32,7 @@ jobs:
             --report-path results.sarif
 
       - name: Upload SARIF
+        if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: results.sarif
